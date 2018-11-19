@@ -16,6 +16,7 @@ f:	.space	8	#O nho luu ket qua (Thuong cua 2 so)
 in1:	.asciiz	"Nhap vao so bi chia:\n"
 in2:	.asciiz	"Nhap vao so chia:\n"
 err:	.asciiz	"So da nhap khong hop le!"
+err1:	.asciiz	"So bi chia bang vo cuc!"
 err2:	.asciiz	"So chia bang 0!"
 out:	.asciiz	"Thuong cua hai so da nhap la:\n"
 
