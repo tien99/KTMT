@@ -1,8 +1,7 @@
 #Chuong trinh chia 2 so thuc
 #Input:		2 so thuc nhap vao tu ban phim
-#Output:	Neu so chia hoac so bi chia khong hop le (NaN)
-#		Trong truong hop so bi chia bang cong/tru vo cuc (Infinity) thi bao loi
-#		Trong truong hop so chia bang 0.0 (hoac -0.0) thi bao loi
+#Output:	Neu so chia hoac so bi chia khong hop le (NaN) thi ket qua la NaN
+#		Trong truong hop so chia va so bi chia cung bang vo cuc hoac cung bang 0 thi ket qua la NaN
 #		Cac truong hop con lai xuat gia tri thuong cua 2 so thuc da nhap (trong tam bieu dien cua kieu float)
 #		Trong truong hop tri tuyet doi cua thuong >= 2^128 thi ket qua la vo cuc (Infinity)
 #		Trong truong hop tri tuyet doi cua thuong <= 2^-127 thi ket qua la 0
@@ -15,9 +14,6 @@ f:	.space	8	#O nho luu ket qua (Thuong cua 2 so)
 #Cau nhac lenh:
 in1:	.asciiz	"Nhap vao so bi chia:\n"
 in2:	.asciiz	"Nhap vao so chia:\n"
-err:	.asciiz	"So da nhap khong hop le!"
-err1:	.asciiz	"So bi chia bang vo cuc!"
-err2:	.asciiz	"So chia bang 0!"
 out:	.asciiz	"Thuong cua hai so da nhap la:\n"
 
 #Code:
@@ -46,14 +42,8 @@ main:
 	lw	$a1, f1
 	lw	$a2, f2
 	#Kiem tra 2 so da nhap co hop le hay khong (= NaN)
-	beq	$a1, 0x7FC00000, error
-	beq	$a2, 0x7FC00000, error
-	#Kiem tra so bi chia co bang cong/tru vo cuc (Infinity) hay khong
-	beq	$a1, 0x7F800000, error1
-	beq	$a2, 0xFF800000, error1
-	#Kiem tra so chia co bang 0.0 hoac -0.0 hay khong
-	beqz	$a2, error2
-	beq	$a2, 0x80000000, error2
+	beq	$a1, 0x7FC00000, case1
+	beq	$a2, 0x7FC00000, case1
 	
 #Xu ly bit dau cua f:
 	#Luu bit dau cua f1, f2 vao $t1, $t2
@@ -66,6 +56,16 @@ main:
 	#Luu bit dau cua f vao $t0
 	xor	$t0, $t1, $t2
 
+	#Kiem tra so bi chia co bang cong/tru vo cuc (Infinity) hay khong
+	beq	$a1, 0x7F800000, excep1
+	beq	$a1, 0xFF800000, excep1
+	#Kiem tra so chia co bang 0.0 hoac -0.0 hay khong
+	beqz	$a2, excep2
+	beq	$a2, 0x80000000, excep2
+	#Kiem tra so chia co bang vo cuc hay khong
+	beq	$a2, 0x7F800000, case2
+	beq	$a2, 0xFF800000, case2
+	
 #Xu ly cac bit mu cua f:
 	#Luu cac bit mu cua f1, f2 vao $t2, $t3
 	andi	$t2, $a1, 0x7F800000
@@ -130,24 +130,25 @@ exit:	li	$v0, 10
 	syscall
 	
 #Xu ly ngoai le trong chuong trinh
-	#Loi: so nhap khong hop le (NaN)
-error:	la	$a0, err
-	li	$v0, 4
-	syscall
-	j	exit
-	#Loi: so bi chia bang vo cuc
-error1:	la	$a0, err1
-	li	$v0, 4
-	syscall
-	j	exit
-	#Loi: so chia bang 0
-error2:	la	$a0, err2
-	li	$v0, 4
-	syscall
-	j	exit
-	#Truong hop tri tuyet doi thuong <= 2^-127
-case2:	li	$v0, 0x0
+	#Ngoai le: so bi chia bang vo cuc
+excep1:	beq	$a2, 0x7F800000, case1
+	beq	$a2, 0xFF800000, case1
+	j	case3
+	
+	#Ngoai le: so chia bang 0
+excep2:	beqz	$a1, case1
+	beq	$a1, 0xF0000000, case1
+	j	case3
+	
+	#Truong hop thuong mang gia tri khong hop le
+case1:	li	$v0, 0x7FC00000
 	j	save
+	
+	#Truong hop tri tuyet doi thuong <= 2^-127
+case2:	li	$t1, 0x0
+	li	$t2, 0x0
+	j	comb
+	
 	#Truong hop tri tuyet doi thuong >= 2^128
 case3:	li	$t1, 0xFF
 	li	$t2, 0x0
